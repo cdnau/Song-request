@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ขอเพลง</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
+:root {
+  --bg: #0e0e0e;
+  --surface: #181818;
+  --surface2: #222;
+  --border: #2e2e2e;
+  --gold: #FFBA08;
+  --gold-dim: #cc9500;
+  --text: #f0f0f0;
+  --muted: #888;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'FC SaveSpace Rounded', 'Sarabun', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 28px;
+  background: #0a0a0a;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.logo { font-size: 19px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+.logo svg { width: 22px; height: 22px; }
+.live-dot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #1DB954; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.dj-link {
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  color: var(--muted); background: transparent;
+  border: 1px solid #333; border-radius: 7px;
+  padding: 6px 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  text-decoration: none; transition: all 0.2s;
+}
+.dj-link svg { width: 13px; height: 13px; }
+.dj-link:hover { border-color: var(--gold); color: var(--gold); }
+
+.hero {
+  text-align: center;
+  padding: 48px 24px 32px;
+}
+.hero h1 { font-size: 32px; font-weight: 700; line-height: 1.3; margin-bottom: 8px; }
+.hero h1 em { color: var(--gold); font-style: normal; }
+.hero p { color: var(--muted); font-size: 14px; }
+
+.container { max-width: 680px; margin: 0 auto; padding: 0 16px 60px; width: 100%; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media(max-width:520px){ .grid{ grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.card-title {
+  font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--gold); margin-bottom: 16px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.card-title svg { width:18px; height:18px; flex-shrink:0; }
+
+label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; margin-top: 12px; }
+label:first-of-type { margin-top: 0; }
+
+input[type=text], textarea {
+  width: 100%;
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input[type=text]:focus, textarea:focus { border-color: var(--gold); }
+textarea { resize: vertical; min-height: 68px; }
+
+.btn {
+  width: 100%; padding: 11px;
+  border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 14px;
+  transition: opacity 0.2s, transform 0.1s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.98); }
+.btn-gold { background: var(--gold); color: #111; }
+
+.qr-box {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #111;
+  border: 1.5px dashed #3a3a3a;
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; color: #444; min-height: 150px;
+  margin-bottom: 10px;
+}
+.qr-box svg { width: 40px; height: 40px; color: #333; }
+.qr-label { font-size: 11px; color: #555; text-align: center; line-height: 1.5; }
+
+/* ——— เพิ่มรูป QR CODE ของตัวเองตรงนี้ ——— */
+/* เปลี่ยน .qr-box เป็น <img src="qr.png" ...> */
+
+.tip-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+
+.queue-section { margin-top: 8px; }
+.section-title {
+  font-size: 14px; font-weight: 700; color: var(--gold);
+  display: flex; align-items: center; gap: 8px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+.section-title svg { width:18px;height:18px; }
+.count-badge {
+  font-size: 11px; color: #888; font-weight: 400;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 2px 8px; border-radius: 20px; margin-left: 4px;
+}
+
+.queue-empty {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 16px; text-align: center;
+  color: var(--muted); font-size: 14px;
+}
+.queue-empty svg { width: 28px; height: 28px; margin-bottom: 10px; display: block; margin-inline: auto; }
+
+.queue-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.queue-item.playing { border-color: #1DB954; }
+.queue-item.done { opacity: 0.35; }
+
+.q-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--gold); color: #111;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.q-info { flex: 1; min-width: 0; }
+.q-song { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-by { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.q-note { font-size: 12px; color: #aaa; font-style: italic; margin-top: 2px; }
+.badge {
+  font-size: 10px; font-weight: 700; padding: 2px 7px;
+  border-radius: 4px; margin-left: 6px;
+  vertical-align: middle;
+}
+.badge-play { background: #1DB954; color: #000; }
+.badge-done { background: var(--gold); color: #111; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--gold); color: #111;
+  font-size: 13px; font-weight: 700;
+  padding: 10px 22px; border-radius: 8px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s; z-index: 999;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="18" r="3"/><circle cx="15" cy="15" r="3"/><path d="M12 18V9l4-2"/></svg>
+    Song Request
+  </div>
+  <div class="nav-right">
+    <div class="live-dot"><span class="dot"></span> Live now</div>
+    <a href="dj.html" class="dj-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      DJ Panel
+    </a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>ขอ<em>เพลง</em>กับนักร้องได้เลย</h1>
+  <p>ส่งคำขอเพลงและทิปให้นักร้องที่คุณชื่นชอบ</p>
+</div>
+
+<div class="container">
+  <div class="grid">
+
+    <!-- ขอเพลง -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+        ขอเพลง
+      </div>
+      <label>ชื่อเพลง / ศิลปิน *</label>
+      <input type="text" id="songInput" placeholder="เช่น เพลงรัก – Bodyslam" />
+      <label>ชื่อผู้ขอ</label>
+      <input type="text" id="nameInput" placeholder="ชื่อของคุณ (ไม่บังคับ)" />
+      <label>ฝากข้อความ</label>
+      <textarea id="noteInput" placeholder="ข้อความถึงนักร้อง..."></textarea>
+      <button class="btn btn-gold" onclick="submitRequest()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        ส่งคำขอ
+      </button>
+    </div>
+
+    <!-- ทิป -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        ทิปนักร้อง
+      </div>
+
+      <!-- ===== วางรูป QR Code ตรงนี้ =====
+           เปลี่ยน div.qr-box ด้านล่างเป็น:
+           <img src="qr.png" style="width:100%;border-radius:10px;display:block;">
+           ===================================== -->
+      <img src="qr.JPG" style="width:100%;border-radius:10px;display:block;">
+    </div>
+  </div>
+
+  <!-- คิวเพลง (view only) -->
+  <div class="queue-section">
+    <div class="section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      คิวเพลง
+      <span class="count-badge" id="countBadge">0 เพลง</span>
+    </div>
+    <div id="queueList">
+      <div class="queue-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        ยังไม่มีคำขอเพลง
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'songqueue_v1';
+
+function loadQueue() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function saveQueue(q) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(q));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function submitRequest() {
+  const song = document.getElementById('songInput').value.trim();
+  const name = document.getElementById('nameInput').value.trim();
+  const note = document.getElementById('noteInput').value.trim();
+  if (!song) { showToast('⚠️ กรุณากรอกชื่อเพลง'); return; }
+
+  const queue = loadQueue();
+  // เพลงใหม่อยู่ท้ายสุด (oldest first ในรายการ = บนสุด)
+  queue.push({ id: Date.now(), song, name: name || '익명', note, status: 'waiting', ts: Date.now() });
+  saveQueue(queue);
+
+  document.getElementById('songInput').value = '';
+  document.getElementById('nameInput').value = '';
+  document.getElementById('noteInput').value = '';
+  renderQueue();
+  showToast('🎵 ส่งคำขอเพลงแล้ว!');
+}
+
+function renderQueue() {
+  const queue = loadQueue();
+  const list = document.getElementById('queueList');
+  const badge = document.getElementById('countBadge');
+  badge.textContent = queue.length + ' เพลง';
+
+  if (!queue.length) {
+    list.innerHTML = `<div class="queue-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      ยังไม่มีคำขอเพลง
+    </div>`;
+    return;
+  }
+
+  // เรียง: waiting/playing ก่อน (ลำดับเดิม), done อยู่ท้าย
+  const sorted = [...queue].sort((a, b) => {
+    const rank = s => s === 'done' ? 1 : 0;
+    if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
+    return a.ts - b.ts; // เก่าสุดบนสุด
+  });
+
+  list.innerHTML = sorted.map((item, idx) => {
+    const num = item.status === 'done' ? '✓' : idx + 1;
+    return `<div class="queue-item ${item.status === 'playing' ? 'playing' : ''} ${item.status === 'done' ? 'done' : ''}">
+      <div class="q-num">${num}</div>
+      <div class="q-info">
+        <div class="q-song">${escHtml(item.song)}
+          ${item.status === 'playing' ? '<span class="badge badge-play">▶ กำลังเล่น</span>' : ''}
+          ${item.status === 'done' ? '<span class="badge badge-done">เล่นแล้ว</span>' : ''}
+        </div>
+        <div class="q-by">ขอโดย ${escHtml(item.name || 'ไม่ระบุชื่อ')}</div>
+        ${item.note ? `<div class="q-note">"${escHtml(item.note)}"</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// auto-refresh คิวทุก 5 วินาที
+renderQueue();
+setInterval(renderQueue, 5000);
+</script>
+</body>
+</html>
