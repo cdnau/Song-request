@@ -112,23 +112,7 @@ textarea { resize: vertical; min-height: 68px; }
 .btn:hover { opacity: 0.88; }
 .btn:active { transform: scale(0.98); }
 .btn-gold { background: var(--gold); color: #111; }
-
-.qr-box {
-  width: 100%;
-  aspect-ratio: 1;
-  background: #111;
-  border: 1.5px dashed #3a3a3a;
-  border-radius: 10px;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 8px; color: #444; min-height: 150px;
-  margin-bottom: 10px;
-}
-.qr-box svg { width: 40px; height: 40px; color: #333; }
-.qr-label { font-size: 11px; color: #555; text-align: center; line-height: 1.5; }
-
-/* ——— เพิ่มรูป QR CODE ของตัวเองตรงนี้ ——— */
-/* เปลี่ยน .qr-box เป็น <img src="qr.png" ...> */
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .tip-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
 
@@ -234,7 +218,7 @@ textarea { resize: vertical; min-height: 68px; }
       <input type="text" id="nameInput" placeholder="ชื่อของคุณ (ไม่บังคับ)" />
       <label>ฝากข้อความ</label>
       <textarea id="noteInput" placeholder="ข้อความถึงนักร้อง..."></textarea>
-      <button class="btn btn-gold" onclick="submitRequest()">
+      <button class="btn btn-gold" id="submitBtn" onclick="submitRequest()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         ส่งคำขอ
       </button>
@@ -246,11 +230,6 @@ textarea { resize: vertical; min-height: 68px; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         ทิปนักร้อง
       </div>
-
-      <!-- ===== วางรูป QR Code ตรงนี้ =====
-           เปลี่ยน div.qr-box ด้านล่างเป็น:
-           <img src="qr.png" style="width:100%;border-radius:10px;display:block;">
-           ===================================== -->
       <img src="qr.JPG" style="width:100%;border-radius:10px;display:block;">
     </div>
   </div>
@@ -265,7 +244,7 @@ textarea { resize: vertical; min-height: 68px; }
     <div id="queueList">
       <div class="queue-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-        ยังไม่มีคำขอเพลง
+        กำลังโหลด...
       </div>
     </div>
   </div>
@@ -273,46 +252,70 @@ textarea { resize: vertical; min-height: 68px; }
 
 <div class="toast" id="toast"></div>
 
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const STORAGE_KEY = 'songqueue_v1';
+const SUPABASE_URL  = 'https://stkkstseygitcsuikfui.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0a2tzdHNleWdpdGNzdWlrZnVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjIxNTgsImV4cCI6MjA5NTAzODE1OH0.Aj76hJ347VbNiucm77k3Z3HIkyn1vhtkHiJKQR3iyqo';
 
-function loadQueue() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch { return []; }
-}
-function saveQueue(q) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(q));
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let queue = [];
+
+// ─── โหลดข้อมูลครั้งแรก ───────────────────────────────────────
+async function loadQueue() {
+  const { data, error } = await db
+    .from('song_requests')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('ts', { ascending: true });
+
+  if (error) { console.error(error); return; }
+  queue = data || [];
+  renderQueue();
 }
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
+// ─── Realtime subscription ────────────────────────────────────
+db.channel('song_requests_channel')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'song_requests' }, () => {
+    loadQueue();
+  })
+  .subscribe();
 
-function submitRequest() {
+// ─── ส่งคำขอเพลง ─────────────────────────────────────────────
+async function submitRequest() {
   const song = document.getElementById('songInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
   const note = document.getElementById('noteInput').value.trim();
   if (!song) { showToast('⚠️ กรุณากรอกชื่อเพลง'); return; }
 
-  const queue = loadQueue();
-  // เพลงใหม่อยู่ท้ายสุด (oldest first ในรายการ = บนสุด)
-  queue.push({ id: Date.now(), song, name: name || '익명', note, status: 'waiting', ts: Date.now() });
-  saveQueue(queue);
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+
+  const { error } = await db.from('song_requests').insert({
+    song,
+    name: name || 'ไม่ระบุชื่อ',
+    note,
+    status: 'waiting',
+    sort_order: Date.now(),
+    ts: Date.now()
+  });
+
+  btn.disabled = false;
+
+  if (error) { showToast('❌ เกิดข้อผิดพลาด กรุณาลองใหม่'); console.error(error); return; }
 
   document.getElementById('songInput').value = '';
   document.getElementById('nameInput').value = '';
   document.getElementById('noteInput').value = '';
-  renderQueue();
   showToast('🎵 ส่งคำขอเพลงแล้ว!');
 }
 
+// ─── Render คิว ───────────────────────────────────────────────
 function renderQueue() {
-  const queue = loadQueue();
-  const list = document.getElementById('queueList');
-  const badge = document.getElementById('countBadge');
+  const list   = document.getElementById('queueList');
+  const badge  = document.getElementById('countBadge');
   badge.textContent = queue.length + ' เพลง';
 
   if (!queue.length) {
@@ -323,11 +326,11 @@ function renderQueue() {
     return;
   }
 
-  // เรียง: waiting/playing ก่อน (ลำดับเดิม), done อยู่ท้าย
+  // เรียง: waiting/playing ก่อน → done อยู่ท้าย, ภายในกลุ่มเรียงตาม ts
   const sorted = [...queue].sort((a, b) => {
     const rank = s => s === 'done' ? 1 : 0;
     if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
-    return a.ts - b.ts; // เก่าสุดบนสุด
+    return a.sort_order - b.sort_order;
   });
 
   list.innerHTML = sorted.map((item, idx) => {
@@ -337,7 +340,7 @@ function renderQueue() {
       <div class="q-info">
         <div class="q-song">${escHtml(item.song)}
           ${item.status === 'playing' ? '<span class="badge badge-play">▶ กำลังเล่น</span>' : ''}
-          ${item.status === 'done' ? '<span class="badge badge-done">เล่นแล้ว</span>' : ''}
+          ${item.status === 'done'    ? '<span class="badge badge-done">เล่นแล้ว</span>'    : ''}
         </div>
         <div class="q-by">ขอโดย ${escHtml(item.name || 'ไม่ระบุชื่อ')}</div>
         ${item.note ? `<div class="q-note">"${escHtml(item.note)}"</div>` : ''}
@@ -346,13 +349,18 @@ function renderQueue() {
   }).join('');
 }
 
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// auto-refresh คิวทุก 5 วินาที
-renderQueue();
-setInterval(renderQueue, 5000);
+loadQueue();
 </script>
 </body>
 </html>
