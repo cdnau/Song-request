@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<<<<<<< Updated upstream
+=======
+  <title>cdnsongRQ</title>
+  <link rel="icon" type="image/x-icon" href="logo.jfif">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFBA08">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DJ Panel">
+</head>
+>>>>>>> Stashed changes
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DJ Panel</title>
@@ -365,10 +376,137 @@ function doLogout() {
 if (sessionStorage.getItem('dj_auth') === '1') {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('djPanel').style.display = 'block';
+<<<<<<< Updated upstream
+=======
+  startDJ();
+}
+
+// ─── Start DJ session ────────────────────────────────────────
+function startDJ() {
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+
+  // ขอสิทธิ์แจ้งเตือน
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  loadQueue();
+
+  realtimeChannel = db.channel('dj_queue_channel')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'song_requests' }, (payload) => {
+      loadQueue();
+      showPushNotification(payload.new);
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'song_requests' }, () => loadQueue())
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'song_requests' }, () => loadQueue())
+    .subscribe();
+}
+
+
+// ─── Load ────────────────────────────────────────────────────
+async function loadQueue() {
+  const { data, error } = await db
+    .from('song_requests')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('ts', { ascending: true });
+
+  if (error) { console.error(error); return; }
+  queue = data || [];
+>>>>>>> Stashed changes
   renderAll();
   pollInterval = setInterval(renderAll, 4000);
 }
 
+<<<<<<< Updated upstream
+=======
+// ─── Actions ─────────────────────────────────────────────────
+async function markPlaying(id) {
+  // ปิด playing เก่าทุกอัน แล้ว toggle อันที่เลือก
+  const current = queue.find(x => x.id === id);
+  const newStatus = current.status === 'playing' ? 'waiting' : 'playing';
+
+  // reset อันที่ playing อยู่ก่อน
+  const playingIds = queue.filter(x => x.status === 'playing' && x.id !== id).map(x => x.id);
+  for (const pid of playingIds) {
+    await db.from('song_requests').update({ status: 'waiting' }).eq('id', pid);
+  }
+  await db.from('song_requests').update({ status: newStatus }).eq('id', id);
+  showToast('▶ ตั้งค่าสถานะแล้ว');
+}
+
+async function markDone(id) {
+  const current = queue.find(x => x.id === id);
+  const newStatus = current.status === 'done' ? 'waiting' : 'done';
+  await db.from('song_requests').update({ status: newStatus }).eq('id', id);
+  showToast('✓ เล่นเสร็จแล้ว');
+}
+
+async function showPushNotification(item) {
+  if (Notification.permission !== 'granted') return;
+
+  const title = '🎵 คำขอเพลงใหม่!';
+  const options = {
+    body: `${item.song}\nขอโดย ${item.name || 'ไม่ระบุชื่อ'}`,
+    tag: 'song-req',
+    renotify: true,
+    vibrate: [200, 100, 200],
+  };
+
+  if ('serviceWorker' in navigator) {
+    const reg = await navigator.serviceWorker.ready;
+    reg.showNotification(title, options);
+  } else {
+    new Notification(title, options);
+  }
+}
+
+
+async function moveUp(id) {
+  // หา waiting items เรียงตาม sort_order
+  const waiting = queue
+    .filter(x => x.status !== 'done')
+    .sort((a, b) => a.sort_order - b.sort_order);
+  const i = waiting.findIndex(x => x.id === id);
+  if (i <= 0) return;
+
+  const a = waiting[i];
+  const b = waiting[i - 1];
+  // สลับ sort_order
+  await db.from('song_requests').update({ sort_order: b.sort_order }).eq('id', a.id);
+  await db.from('song_requests').update({ sort_order: a.sort_order }).eq('id', b.id);
+}
+
+async function moveDown(id) {
+  const waiting = queue
+    .filter(x => x.status !== 'done')
+    .sort((a, b) => a.sort_order - b.sort_order);
+  const i = waiting.findIndex(x => x.id === id);
+  if (i < 0 || i >= waiting.length - 1) return;
+
+  const a = waiting[i];
+  const b = waiting[i + 1];
+  await db.from('song_requests').update({ sort_order: b.sort_order }).eq('id', a.id);
+  await db.from('song_requests').update({ sort_order: a.sort_order }).eq('id', b.id);
+}
+
+async function removeItem(id) {
+  await db.from('song_requests').delete().eq('id', id);
+  showToast('🗑 ลบออกจากคิวแล้ว');
+}
+
+async function clearDone() {
+  const doneIds = queue.filter(x => x.status === 'done').map(x => x.id);
+  if (!doneIds.length) return;
+  await db.from('song_requests').delete().in('id', doneIds);
+  showToast('🗑 ลบที่เล่นแล้วทั้งหมด');
+}
+
+// ─── Filter ──────────────────────────────────────────────────
+>>>>>>> Stashed changes
 function setFilter(f, btn) {
   currentFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
