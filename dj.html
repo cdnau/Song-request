@@ -330,6 +330,9 @@ nav {
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+
+const VAPID_PUBLIC_KEY = 'BOSU6coY9iFqiM7kpAwKLbwRmllIJoh8K9eEXixvzLXDQL9nCr1Or9W6VkyOSbLm-gUtFQjWU1FXkp95O5vK8qc';
+
 const SUPABASE_URL  = 'https://stkkstseygitcsuikfui.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0a2tzdHNleWdpdGNzdWlrZnVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjIxNTgsImV4cCI6MjA5NTAzODE1OH0.Aj76hJ347VbNiucm77k3Z3HIkyn1vhtkHiJKQR3iyqo';
 const DJ_PASSWORD   = '09090909';
@@ -378,27 +381,19 @@ if (sessionStorage.getItem('dj_auth') === '1') {
 
 // ─── Start DJ session ────────────────────────────────────────
 function startDJ() {
-  // Register Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
   }
-
-  // ขอสิทธิ์แจ้งเตือน
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
+  subscribePush(); // ← เพิ่มบรรทัดนี้
 
   loadQueue();
-
   realtimeChannel = db.channel('dj_queue_channel')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'song_requests' }, (payload) => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'song_requests' }, () => {
       loadQueue();
-      showPushNotification(payload.new);
     })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'song_requests' }, () => loadQueue())
-    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'song_requests' }, () => loadQueue())
     .subscribe();
 }
+
 
 
 // ─── Load ────────────────────────────────────────────────────
@@ -577,6 +572,33 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
 }
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const output = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) output[i] = rawData.charCodeAt(i);
+  return output;
+}
+
+async function subscribePush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return;
+
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    await db.from('push_subscriptions').insert({ subscription: sub.toJSON() });
+  }
+}
+
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

@@ -1,0 +1,22 @@
+{
+  "name": "Song Request DJ Panel",
+  "short_name": "DJ Panel",
+  "description": "จัดการคิวเพลง",
+  "start_url": "/dj.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0e0e0e",
+  "theme_color": "#FFBA08",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3659/3659899.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3659/3659899.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
