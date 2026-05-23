@@ -3,6 +3,12 @@
 <head>
   <title>cdnsongRQ</title>
   <link rel="icon" type="image/x-icon" href="logo.jfif">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFBA08">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DJ Panel">
+
 </head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -372,13 +378,28 @@ if (sessionStorage.getItem('dj_auth') === '1') {
 
 // ─── Start DJ session ────────────────────────────────────────
 function startDJ() {
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+
+  // ขอสิทธิ์แจ้งเตือน
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
   loadQueue();
+
   realtimeChannel = db.channel('dj_queue_channel')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'song_requests' }, () => {
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'song_requests' }, (payload) => {
       loadQueue();
+      showPushNotification(payload.new);
     })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'song_requests' }, () => loadQueue())
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'song_requests' }, () => loadQueue())
     .subscribe();
 }
+
 
 // ─── Load ────────────────────────────────────────────────────
 async function loadQueue() {
@@ -407,6 +428,26 @@ async function markPlaying(id) {
   await db.from('song_requests').update({ status: newStatus }).eq('id', id);
   showToast('▶ ตั้งค่าสถานะแล้ว');
 }
+
+async function showPushNotification(item) {
+  if (Notification.permission !== 'granted') return;
+
+  const title = '🎵 คำขอเพลงใหม่!';
+  const options = {
+    body: `${item.song}\nขอโดย ${item.name || 'ไม่ระบุชื่อ'}`,
+    tag: 'song-req',
+    renotify: true,
+    vibrate: [200, 100, 200],
+  };
+
+  if ('serviceWorker' in navigator) {
+    const reg = await navigator.serviceWorker.ready;
+    reg.showNotification(title, options);
+  } else {
+    new Notification(title, options);
+  }
+}
+
 
 async function markDone(id) {
   const current = queue.find(x => x.id === id);
