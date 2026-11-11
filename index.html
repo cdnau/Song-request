@@ -67,7 +67,7 @@ nav {
 
 .container { max-width: 680px; margin: 0 auto; padding: 0 16px 60px; width: 100%; }
 
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 16px; margin-bottom: 24px; }
 @media(max-width:520px){ .grid{ grid-template-columns: 1fr; } }
 
 .card {
@@ -101,6 +101,14 @@ input[type=text], textarea {
 }
 input[type=text]:focus, textarea:focus { border-color: var(--gold); }
 textarea { resize: vertical; min-height: 68px; }
+
+/* Fill the taller tip card on desktop; keep the compact mobile form. */
+@media (min-width: 521px) {
+  .grid { align-items: stretch; }
+  .request-card { display: flex; flex-direction: column; }
+  .request-card > :not(textarea) { flex-shrink: 0; }
+  .request-card textarea { flex: 1 1 68px; }
+}
 
 .btn {
   width: 100%; padding: 11px;
@@ -251,7 +259,7 @@ footer {
   <div class="grid">
 
     <!-- ขอเพลง -->
-    <div class="card">
+    <div class="card request-card">
       <div class="card-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
         ขอเพลง
