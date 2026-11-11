@@ -118,6 +118,18 @@ textarea { resize: vertical; min-height: 68px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .tip-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+.tip-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tip-choice { padding: 10px 6px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--text); font: inherit; cursor: pointer; }
+.tip-choice:last-child { grid-column: 1 / -1; }
+.tip-choice[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: #111; font-weight: 700; }
+.tip-choice:focus-visible, .tip-download:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+#customTipArea { margin-top: 12px; }
+#customTip[aria-invalid="true"] { border-color: #ff8c8c; }
+#tipStatus { margin: 12px 0; font-size: 13px; color: var(--text); }
+#tipQr { width: 100%; max-width: 320px; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
+.tip-amount { text-align: center; color: var(--gold); font-size: 22px; font-weight: 700; margin: 10px 0; }
+.tip-recipient { text-align: center; font-size: 13px; margin: 8px 0; }
+.tip-download { display: block; text-align: center; color: var(--gold); padding: 10px; font-size: 13px; }
 
 .queue-section { margin-top: 8px; }
 .section-title {
@@ -262,7 +274,27 @@ footer {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         ทิปนักร้อง
       </div>
-      <img src="qr.JPG" style="width:100%;border-radius:10px;display:block;">
+      <div class="tip-options" role="group" aria-label="เลือกจำนวนเงินทิป">
+        <button type="button" class="tip-choice" data-tip="20" aria-pressed="true">20 บาท</button>
+        <button type="button" class="tip-choice" data-tip="50" aria-pressed="false">50 บาท</button>
+        <button type="button" class="tip-choice" data-tip="100" aria-pressed="false">100 บาท</button>
+        <button type="button" class="tip-choice" data-tip="1000" aria-pressed="false">1,000 บาท</button>
+        <button type="button" class="tip-choice" data-tip="custom" aria-pressed="false" aria-controls="customTipArea">กำหนดเอง</button>
+      </div>
+      <div id="customTipArea" hidden>
+        <label for="customTip">จำนวนเงิน (บาท)</label>
+        <input type="text" id="customTip" inputmode="decimal" maxlength="9" placeholder="เช่น 25.50" aria-describedby="customTipHelp tipStatus" autocomplete="off">
+        <p class="tip-note" id="customTipHelp">0.01–999,999.99 บาท ทศนิยมไม่เกิน 2 ตำแหน่ง</p>
+      </div>
+      <p id="tipStatus" role="status" aria-live="polite">กำลังสร้าง QR...</p>
+      <div id="tipResult" hidden>
+        <img id="tipQr" alt="QR พร้อมเพย์สำหรับทิป">
+        <p class="tip-amount" id="tipAmount"></p>
+        <p class="tip-recipient">ผู้รับ: นาย ชินดนัย เรืองสมบัติ</p>
+        <a id="downloadTipQr" class="tip-download" download>บันทึก QR เพื่อเปิดในแอปธนาคาร</a>
+      </div>
+      <p class="tip-note">ตรวจสอบชื่อผู้รับและยอดเงินในแอปธนาคารก่อนยืนยันโอน</p>
+      <p class="tip-note">การทิปเป็นทางเลือก เว็บยังไม่ตรวจสอบการโอนอัตโนมัติ</p>
     </div>
   </div>
 
@@ -316,6 +348,9 @@ footer {
 
 
 <!-- Supabase JS SDK -->
+<script src="vendor/qrcode.js"></script>
+<script src="promptpay.js"></script>
+<script src="tip.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = 'https://stkkstseygitcsuikfui.supabase.co';
